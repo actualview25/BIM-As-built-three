@@ -2,13 +2,13 @@
 <html lang="ar">
 <head>
   <meta charset="UTF-8">
-  <title>Three.js Virtual Tour – تحسين شامل</title>
+  <title>Three.js Virtual Tour</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-  <!-- لوحة المعلومات BIM -->
+  <!-- لوحة المعلومات -->
   <div id="bim-info-panel">
     <div id="bim-panel-header">
       <span id="bim-panel-title">معلومات العنصر</span>
@@ -23,18 +23,13 @@
     <button onclick="switchScene('Courtyard')">Courtyard</button>
   </div>
 
-  <!-- زر AutoRotate -->
+  <!-- أدوات -->
   <button id="autorotateToggle">🔄 AutoRotate</button>
 
   <!-- Container للـ WebGL -->
   <div id="container"></div>
 
-  <!-- مكتبة Three.js -->
-  <script src="https://cdn.jsdelivr.net/npm/three@0.157.0/build/three.min.js"></script>
-  <!-- OrbitControls للتحكم بالكاميرا -->
-  <script src="https://cdn.jsdelivr.net/npm/three@0.157.0/examples/js/controls/OrbitControls.js"></script>
-
-  <!-- ملف JS الرئيسي -->
-  <script src="main.js"></script>
+  <!-- ES Modules Three.js -->
+  <script type="module" src="main.js"></script>
 </body>
 </html>
