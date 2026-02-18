@@ -2,35 +2,14 @@
 <html lang="ar">
 <head>
   <meta charset="UTF-8">
-  <title>Virtual Tour Three.js</title>
+  <title>Three.js Virtual Tour</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-  <!-- Panel للمعلومات -->
-  <div id="bim-info-panel">
-    <div id="bim-panel-header">
-      <span id="bim-panel-title">معلومات العنصر</span>
-      <button onclick="document.getElementById('bim-info-panel').classList.remove('visible')">✕</button>
-    </div>
-    <div id="bim-panel-content"></div>
-  </div>
-
-  <!-- قائمة المشاهد -->
-  <div id="sceneList">
-    <button onclick="switchScene('StartPoint')">StartPoint</button>
-    <button onclick="switchScene('Courtyard')">Courtyard</button>
-  </div>
-
-  <!-- زر AutoRotate -->
-  <button id="autorotateToggle">🔄 AutoRotate</button>
-
-  <!-- Container للـ WebGL -->
   <div id="container"></div>
 
-  <!-- مكتبة Three.js بصيغة ES Module -->
   <script type="module" src="main.js"></script>
-
 </body>
 </html>
