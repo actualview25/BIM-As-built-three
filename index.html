@@ -7,8 +7,6 @@
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-
-  <!-- لوحة المعلومات -->
   <div id="bim-info-panel">
     <div id="bim-panel-header">
       <span id="bim-panel-title">معلومات العنصر</span>
@@ -17,19 +15,16 @@
     <div id="bim-panel-content"></div>
   </div>
 
-  <!-- قائمة المشاهد -->
   <div id="sceneList">
     <button onclick="switchScene('StartPoint')">StartPoint</button>
     <button onclick="switchScene('Courtyard')">Courtyard</button>
   </div>
 
-  <!-- أدوات -->
   <button id="autorotateToggle">🔄 AutoRotate</button>
 
-  <!-- Container للـ WebGL -->
   <div id="container"></div>
 
-  <!-- ES Modules Three.js -->
+  <!-- هنا نحدد type="module" -->
   <script type="module" src="main.js"></script>
 </body>
 </html>
