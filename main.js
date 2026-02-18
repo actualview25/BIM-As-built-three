@@ -4,14 +4,14 @@ import { OrbitControls } from 'https://cdn.jsdelivr.net/npm/three@0.157.0/exampl
 let scene, camera, renderer, controls;
 let autorotate = true;
 
-// ==========================
-// المشهد
-// ==========================
+// ====================
+// Scene
+// ====================
 scene = new THREE.Scene();
 
-// ==========================
-// الكاميرا
-// ==========================
+// ====================
+// Camera
+// ====================
 camera = new THREE.PerspectiveCamera(
   75,
   window.innerWidth / window.innerHeight,
@@ -20,34 +20,30 @@ camera = new THREE.PerspectiveCamera(
 );
 camera.position.set(0, 0, 0.01);
 
-// ==========================
-// Renderer (جودة عالية)
-// ==========================
-renderer = new THREE.WebGLRenderer({
-  antialias: true,
-  powerPreference: "high-performance"
-});
+// ====================
+// Renderer
+// ====================
+renderer = new THREE.WebGLRenderer({ antialias: true });
 renderer.setPixelRatio(window.devicePixelRatio);
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.outputColorSpace = THREE.SRGBColorSpace;
 
 document.getElementById('container').appendChild(renderer.domElement);
 
-// ==========================
-// Controls (السحب والتحكم)
-// ==========================
+// ====================
+// Controls
+// ====================
 controls = new OrbitControls(camera, renderer.domElement);
 controls.enableZoom = false;
 controls.enablePan = false;
-controls.rotateSpeed = 0.3;
 controls.enableDamping = true;
 controls.dampingFactor = 0.05;
 
-// ==========================
+// ====================
 // Panorama
-// ==========================
+// ====================
 const loader = new THREE.TextureLoader();
-loader.load('textures/StartPoint.jpg', texture => {
+loader.load('./textures/StartPoint.jpg', texture => {
 
   texture.colorSpace = THREE.SRGBColorSpace;
   texture.anisotropy = renderer.capabilities.getMaxAnisotropy();
@@ -55,17 +51,15 @@ loader.load('textures/StartPoint.jpg', texture => {
   const geometry = new THREE.SphereGeometry(500, 80, 60);
   geometry.scale(-1, 1, 1);
 
-  const material = new THREE.MeshBasicMaterial({
-    map: texture
-  });
-
+  const material = new THREE.MeshBasicMaterial({ map: texture });
   const sphere = new THREE.Mesh(geometry, material);
+
   scene.add(sphere);
 });
 
-// ==========================
-// Animation Loop
-// ==========================
+// ====================
+// Animation
+// ====================
 function animate() {
   requestAnimationFrame(animate);
 
@@ -78,16 +72,16 @@ function animate() {
 }
 animate();
 
-// ==========================
-// زر إيقاف الدوران
-// ==========================
+// ====================
+// UI
+// ====================
 document.getElementById('toggleRotate').onclick = () => {
   autorotate = !autorotate;
 };
 
-// ==========================
+// ====================
 // Resize
-// ==========================
+// ====================
 window.addEventListener('resize', () => {
   camera.aspect = window.innerWidth / window.innerHeight;
   camera.updateProjectionMatrix();
