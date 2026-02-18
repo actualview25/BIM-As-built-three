@@ -1,7 +1,6 @@
 // main.js
 import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.157.0/build/three.module.js';
 import { OrbitControls } from 'https://cdn.jsdelivr.net/npm/three@0.157.0/examples/jsm/controls/OrbitControls.js';
-
 // ==== المتغيرات الأساسية ====
 let scene, camera, renderer, controls;
 let currentPanorama;
