@@ -11,16 +11,18 @@ body, html {
   display: block;
 }
 
+/* لوحة معلومات BIM */
 #bim-info-panel {
   position: absolute;
   top: 20px;
   right: 20px;
-  width: 220px;
+  width: 240px;
   background: rgba(0,0,0,0.7);
   color: #fff;
-  padding: 10px;
+  padding: 12px;
   border-radius: 8px;
   display: none;
+  z-index: 10;
 }
 
 #bim-info-panel.visible { display: block; }
@@ -29,11 +31,13 @@ body, html {
   position: absolute;
   top: 20px;
   left: 20px;
+  z-index: 10;
 }
 
 #sceneList button {
   margin: 5px;
   padding: 5px 10px;
+  cursor: pointer;
 }
 
 #autorotateToggle {
@@ -41,4 +45,6 @@ body, html {
   bottom: 20px;
   left: 20px;
   padding: 5px 10px;
+  cursor: pointer;
+  z-index: 10;
 }
