@@ -1,22 +1,42 @@
-let scene, camera, renderer;
+// ============================================
+// Three.js Virtual Tour – نسخة محسنة
+// ============================================
+
+// المشهد، الكاميرا، الـ renderer
+let scene, camera, renderer, controls;
 let currentPanorama;
 let hotspots = [];
 let autorotate = true;
 
 // إعداد المشهد والكاميرا
 scene = new THREE.Scene();
-camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-camera.position.set(0, 0, 0);
+camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000);
+camera.position.set(0, 0, 0.1);
 
+// Renderer
 renderer = new THREE.WebGLRenderer({ antialias: true });
 renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.outputEncoding = THREE.sRGBEncoding; // تحسين الألوان
+renderer.toneMapping = THREE.ACESFilmicToneMapping; // جعل الألوان طبيعية
+renderer.toneMappingExposure = 1.0;
 document.getElementById('container').appendChild(renderer.domElement);
 
-// الإضاءة (Basic)
-const light = new THREE.AmbientLight(0xffffff, 1);
-scene.add(light);
+// OrbitControls للسحب والZoom
+controls = new THREE.OrbitControls(camera, renderer.domElement);
+controls.enableZoom = true;
+controls.enablePan = false;
+controls.enableDamping = true;
+controls.dampingFactor = 0.05;
+controls.autoRotate = autorotate;
+controls.autoRotateSpeed = 0.3;
 
-// خرائط المشاهد
+// إضاءة أساسية
+const ambientLight = new THREE.AmbientLight(0xffffff, 1);
+scene.add(ambientLight);
+
+// ============================================
+// بيانات المشاهد
+// ============================================
 const scenes = {
   'StartPoint': {
     image: 'textures/StartPoint.jpg',
@@ -32,31 +52,42 @@ const scenes = {
   }
 };
 
-// تحميل Panorama
+// ============================================
+// دالة تحميل Panorama
+// ============================================
 function loadPanorama(path) {
   const texture = new THREE.TextureLoader().load(path);
+  texture.encoding = THREE.sRGBEncoding;
   const geometry = new THREE.SphereGeometry(500, 60, 40);
-  geometry.scale(-1, 1, 1);
-  const material = new THREE.MeshBasicMaterial({ map: texture });
+  geometry.scale(-1,1,1);
+  const material = new THREE.MeshStandardMaterial({
+    map: texture,
+    roughness: 1,
+    metalness: 0
+  });
   const sphere = new THREE.Mesh(geometry, material);
   scene.add(sphere);
   return sphere;
 }
 
+// ============================================
 // إنشاء Hotspot
+// ============================================
 function createHotspot(x, y, z, infoText) {
   const spriteMap = new THREE.TextureLoader().load('img/hotspot.png');
   const spriteMaterial = new THREE.SpriteMaterial({ map: spriteMap });
   const hotspot = new THREE.Sprite(spriteMaterial);
   hotspot.position.set(x, y, z);
-  hotspot.scale.set(10, 10, 1);
+  hotspot.scale.set(15, 15, 1); // حجم Hotspot
   hotspot.userData = { info: infoText };
-  hotspots.push(hotspot);
   scene.add(hotspot);
+  hotspots.push(hotspot);
   return hotspot;
 }
 
+// ============================================
 // التبديل بين المشاهد
+// ============================================
 function switchScene(name) {
   if(currentPanorama) scene.remove(currentPanorama);
   hotspots.forEach(h => scene.remove(h));
@@ -67,7 +98,9 @@ function switchScene(name) {
   data.hotspots.forEach(h => createHotspot(h.x, h.y, h.z, h.info));
 }
 
+// ============================================
 // Raycaster للنقر على Hotspots
+// ============================================
 const raycaster = new THREE.Raycaster();
 const mouse = new THREE.Vector2();
 
@@ -86,22 +119,32 @@ function onClick(event) {
 
 window.addEventListener('click', onClick);
 
-// Autorotate
+// ============================================
+// زر AutoRotate
+// ============================================
+document.getElementById('autorotateToggle').addEventListener('click', () => {
+  autorotate = !autorotate;
+  controls.autoRotate = autorotate;
+});
+
+// ============================================
+// Render Loop
+// ============================================
 function animate() {
   requestAnimationFrame(animate);
-  if(autorotate) camera.rotation.y += 0.001;
+  controls.update();
   renderer.render(scene, camera);
 }
 animate();
 
-document.getElementById('autorotateToggle').addEventListener('click', () => {
-  autorotate = !autorotate;
-});
-
+// ============================================
 // بدء التشغيل بالمشهد الأول
+// ============================================
 switchScene('StartPoint');
 
-// التعديل عند تغيير حجم الشاشة
+// ============================================
+// تعديل حجم الشاشة
+// ============================================
 window.addEventListener('resize', () => {
   camera.aspect = window.innerWidth / window.innerHeight;
   camera.updateProjectionMatrix();
