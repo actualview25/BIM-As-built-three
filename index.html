@@ -2,16 +2,26 @@
 <html lang="ar">
 <head>
   <meta charset="UTF-8">
-  <title>Virtual Tour</title>
+  <title>جولة افتراضية - Virtual Tour</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="stylesheet" href="style.css">
+  
+  <!-- Import Map للملفات المحلية - هذا هو الحل السحري! -->
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "./libs/three.module.js"
+      }
+    }
+  </script>
+  
+  <!-- أيقونة للمتصفح (اختياري) -->
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🌍</text></svg>">
 </head>
 <body>
-
   <div id="container"></div>
-  <button id="toggleRotate">⏸️ AutoRotate</button>
+  <button id="toggleRotate">⏸️ إيقاف التدوير</button>
 
   <script type="module" src="./main.js"></script>
-
 </body>
 </html>
