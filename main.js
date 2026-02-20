@@ -1,9 +1,9 @@
 import * as THREE from './libs/three.module.js';
 import { OrbitControls } from './libs/OrbitControls.js';
 
-// =======================================
-// متغيرات أساسية
-// =======================================
+// ======================
+// المتغيرات الأساسية
+// ======================
 let scene, camera, renderer, controls;
 let autorotate = true;
 let drawMode = false;
@@ -25,9 +25,9 @@ const pathColors = {
 let currentPathType = 'EL';
 window.setCurrentPathType = (t) => currentPathType = t;
 
-// =======================================
+// ======================
 // تهيئة المشهد والكاميرا
-// =======================================
+// ======================
 init();
 
 function init() {
@@ -40,15 +40,15 @@ function init() {
     2000
   );
 
-  // ضع الكاميرا داخل الكرة بشكل مناسب
-  camera.position.set(0, 0, 0.1);
+  // الكاميرا خارج المركز قليلًا لتجنب ظهور شاشة سوداء
+  camera.position.set(0, 0, 5);
 
   renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
   renderer.setSize(window.innerWidth, window.innerHeight);
   renderer.setPixelRatio(window.devicePixelRatio);
   document.getElementById('container').appendChild(renderer.domElement);
 
-  // OrbitControls مع التدوير التلقائي
+  // تحكم OrbitControls مع التدوير التلقائي
   controls = new OrbitControls(camera, renderer.domElement);
   controls.enableZoom = true;
   controls.enablePan = false;
@@ -56,6 +56,8 @@ function init() {
   controls.enableRotate = true;
   controls.autoRotate = autorotate;
   controls.autoRotateSpeed = 0.2;
+  controls.target.set(0, 0, 0);
+  controls.update();
 
   const ambientLight = new THREE.AmbientLight(0xffffff, 1.2);
   scene.add(ambientLight);
@@ -65,13 +67,13 @@ function init() {
   animate();
 }
 
-// =======================================
+// ======================
 // تحميل البانوراما
-// =======================================
+// ======================
 function loadPanorama() {
   const loader = new THREE.TextureLoader();
   loader.load(
-    './textures/StartPoint.jpg',
+    './textures/StartPoint.jpg', // تأكد أن الصورة موجودة هنا
     (texture) => {
       texture.colorSpace = THREE.SRGBColorSpace;
       texture.wrapS = THREE.RepeatWrapping;
@@ -89,15 +91,17 @@ function loadPanorama() {
       scene.add(sphereMesh);
 
       console.log('✅ Panorama Loaded');
+      console.log('Camera position:', camera.position);
+      console.log('Sphere bounding sphere:', sphereMesh.geometry.boundingSphere);
     },
     undefined,
     (err) => console.error('❌ خطأ تحميل البانوراما:', err)
   );
 }
 
-// =======================================
+// ======================
 // الرسم بالماوس
-// =======================================
+// ======================
 const mouse = new THREE.Vector2();
 const raycaster = new THREE.Raycaster();
 const markerPreview = new THREE.Mesh(
@@ -136,9 +140,9 @@ function onMouseMove(e) {
   } else markerPreview.visible = false;
 }
 
-// =======================================
+// ======================
 // إدارة النقاط والمسارات
-// =======================================
+// ======================
 function addPoint(pos) {
   selectedPoints.push(pos.clone());
 
@@ -198,9 +202,9 @@ function clearCurrentDrawing() {
   if (tempLine) { scene.remove(tempLine); tempLine.geometry.dispose(); tempLine=null; }
 }
 
-// =======================================
+// ======================
 // لوحة المفاتيح
-// =======================================
+// ======================
 function onKeyDown(e) {
   if (!drawMode) return;
 
@@ -224,9 +228,9 @@ function onKeyDown(e) {
   }
 }
 
-// =======================================
+// ======================
 // إعداد الأحداث + زر Finalize
-// =======================================
+// ======================
 function setupEvents() {
   renderer.domElement.addEventListener('click', onClick);
   renderer.domElement.addEventListener('mousemove', onMouseMove);
@@ -264,18 +268,18 @@ function setupEvents() {
   finalizeBtn.onclick = () => saveCurrentPath();
 }
 
-// =======================================
+// ======================
 // Resize
-// =======================================
+// ======================
 function onResize() {
   camera.aspect = window.innerWidth/window.innerHeight;
   camera.updateProjectionMatrix();
   renderer.setSize(window.innerWidth, window.innerHeight);
 }
 
-// =======================================
+// ======================
 // Animate
-// =======================================
+// ======================
 function animate() {
   requestAnimationFrame(animate);
   controls.update();
