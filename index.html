@@ -27,6 +27,29 @@
 
   <!-- مهم جدًا: type="module" -->
   <script type="module" src="./main.js"></script>
+<!-- شريط الحالة وأزرار الألوان -->
+<div class="status-bar" id="status">النوع الحالي: <span style="color: #ffcc00;">EL</span></div>
+<div class="color-panel">
+  <div class="color-btn EL" title="EL - كهرباء" onclick="changeType('EL')"></div>
+  <div class="color-btn AC" title="AC - تكييف" onclick="changeType('AC')"></div>
+  <div class="color-btn WP" title="WP - مياه" onclick="changeType('WP')"></div>
+  <div class="color-btn WA" title="WA - صرف صحي" onclick="changeType('WA')"></div>
+  <div class="color-btn GS" title="GS - غاز" onclick="changeType('GS')"></div>
+</div>
 
+<script>
+// دالة مساعدة لتغيير نوع المسار من الأزرار
+function changeType(type) {
+  // هذا سيعمل فقط إذا كان المتغير currentPipeType معرفاً في النطاق العام
+  // لكنه للتوضيح فقط
+  console.log('تغيير النوع إلى:', type);
+  document.getElementById('status').innerHTML = `النوع الحالي: <span style="color: ${
+    type === 'EL' ? '#ffcc00' : 
+    type === 'AC' ? '#00ccff' : 
+    type === 'WP' ? '#0066cc' : 
+    type === 'WA' ? '#ff3300' : '#33cc33'
+  };">${type}</span>`;
+}
+</script>
 </body>
 </html>
