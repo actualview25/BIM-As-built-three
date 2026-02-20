@@ -1,14 +1,14 @@
 import * as THREE from './libs/three.module.js';
 import { OrbitControls } from './libs/OrbitControls.js';
 
+// =======================================
+// المتغيرات الأساسية
+// =======================================
 let scene, camera, renderer, controls;
 let autorotate = true;
 let drawMode = false;
 
-// =======================================
-// المتغيرات الأساسية للرسم
-// =======================================
-let sphereMesh;
+let sphereMesh = null;
 let selectedPoints = [];
 let paths = [];
 let tempLine = null;
@@ -39,7 +39,7 @@ function init() {
     0.1,
     2000
   );
-  camera.position.set(0, 0, 0.1); // داخل الكرة
+  camera.position.set(0, 0, 0.1); // ضع الكاميرا داخل الكرة لكن بعيد قليلًا عن المركز
 
   renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
   renderer.setSize(window.innerWidth, window.innerHeight);
@@ -50,6 +50,7 @@ function init() {
   controls.enableZoom = true;
   controls.enablePan = false;
   controls.enableDamping = true;
+  controls.enableRotate = true;
   controls.autoRotate = autorotate;
   controls.autoRotateSpeed = 0.2;
 
@@ -62,22 +63,22 @@ function init() {
 }
 
 // =======================================
-// تحميل الصورة البانورامية بأفضل جودة
+// تحميل البانوراما بأفضل جودة
 // =======================================
 function loadPanorama() {
   const loader = new THREE.TextureLoader();
   loader.load(
-    './textures/StartPoint.jpg',
+    './textures/StartPoint.jpg', // تأكد أن الصورة موجودة هنا
     (texture) => {
-      texture.colorSpace = THREE.SRGBColorSpace; // التصحيح الجديد
+      texture.colorSpace = THREE.SRGBColorSpace; // التصحيح الجديد لـ Three.js
       texture.wrapS = THREE.RepeatWrapping;
       texture.wrapT = THREE.RepeatWrapping;
-      texture.repeat.x = -1; // لعكس الصورة أفقياً إذا لزم
+      texture.repeat.x = -1; // لعكس الصورة إذا لزم
 
       const geometry = new THREE.SphereGeometry(500, 128, 128);
       const material = new THREE.MeshBasicMaterial({
         map: texture,
-        side: THREE.BackSide // الكاميرا داخل الكرة
+        side: THREE.BackSide // مهم جدًا لأن الكاميرا داخل الكرة
       });
 
       if (sphereMesh) scene.remove(sphereMesh);
@@ -92,10 +93,8 @@ function loadPanorama() {
 }
 
 // =======================================
-// رسم المسارات باستخدام مؤشر ماوس
+// الرسم بالماوس
 // =======================================
-
-// مؤشر ماوس على الكرة
 const mouse = new THREE.Vector2();
 const raycaster = new THREE.Raycaster();
 const markerPreview = new THREE.Mesh(
@@ -105,7 +104,6 @@ const markerPreview = new THREE.Mesh(
 scene.add(markerPreview);
 markerPreview.visible = false;
 
-// النقر على الكرة لإضافة نقطة
 function onClick(e) {
   if (!drawMode || !sphereMesh) return;
   if (e.target !== renderer.domElement) return;
@@ -116,12 +114,9 @@ function onClick(e) {
   raycaster.setFromCamera(mouse, camera);
   const hits = raycaster.intersectObject(sphereMesh);
 
-  if (hits.length) {
-    addPoint(hits[0].point);
-  }
+  if (hits.length) addPoint(hits[0].point);
 }
 
-// تحديث موقع مؤشر الماوس قبل النقر
 function onMouseMove(e) {
   if (!drawMode || !sphereMesh) { markerPreview.visible = false; return; }
   if (e.target !== renderer.domElement) { markerPreview.visible = false; return; }
