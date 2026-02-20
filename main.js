@@ -8,6 +8,12 @@ let autorotate = true;
 let sphereMesh = null;
 let hotspots = [];
 let selectedPoints = [];
+let previewLine = null;
+let pipes = [];
+let currentPipeType = {
+  radius: 0.6,
+  color: 0xffcc00
+};
 
 // ==================== Scene & Camera ====================
 scene = new THREE.Scene();
@@ -53,6 +59,8 @@ const raycaster = new THREE.Raycaster();
 const mouse = new THREE.Vector2();
 
 function onClick(event) {
+  if (!sphereMesh) return;
+
   mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
   mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
   raycaster.setFromCamera(mouse, camera);
@@ -60,8 +68,58 @@ function onClick(event) {
   const intersects = raycaster.intersectObject(sphereMesh);
   if (intersects.length > 0) {
     const point = intersects[0].point.clone();
-    addHotspot(point);
+    selectedPoints.push(point);
+    drawPreviewPath();
   }
+}
+
+function drawPreviewPath() {
+  if (previewLine) {
+    scene.remove(previewLine);
+    previewLine.geometry.dispose();
+  }
+
+  if (selectedPoints.length < 2) return;
+
+  const geometry = new THREE.BufferGeometry().setFromPoints(selectedPoints);
+  const material = new THREE.LineBasicMaterial({
+    color: 0xffffff,
+    transparent: true,
+    opacity: 0.7
+  });
+
+  previewLine = new THREE.Line(geometry, material);
+  scene.add(previewLine);
+}
+function finalizePipe() {
+  if (selectedPoints.length < 2) return;
+
+  if (previewLine) {
+    scene.remove(previewLine);
+    previewLine.geometry.dispose();
+    previewLine = null;
+  }
+
+  const curve = new THREE.CatmullRomCurve3(selectedPoints);
+  const geometry = new THREE.TubeGeometry(
+    curve,
+    64,
+    currentPipeType.radius,
+    12,
+    false
+  );
+
+  const material = new THREE.MeshStandardMaterial({
+    color: currentPipeType.color,
+    roughness: 0.4,
+    metalness: 0.1
+  });
+
+  const pipe = new THREE.Mesh(geometry, material);
+  pipes.push(pipe);
+  scene.add(pipe);
+
+  selectedPoints = [];
 }
 
 function addHotspot(position) {
