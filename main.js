@@ -1,5 +1,11 @@
-import * as THREE from './libs/three.module.js';
-import { OrbitControls } from './libs/OrbitControls.js';
+// اختبار بسيط أولاً
+console.log('🚀 main.js is loading...');
+
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/OrbitControls.js';
+
+console.log('✅ Three.js version:', THREE.REVISION);
+console.log('✅ OrbitControls imported');
 
 // ======================
 // المتغيرات الأساسية
@@ -23,135 +29,178 @@ const pathColors = {
 };
 
 let currentPathType = 'EL';
-window.setCurrentPathType = (t) => currentPathType = t;
+window.setCurrentPathType = (t) => {
+  currentPathType = t;
+  console.log('🎨 تغيير النوع إلى:', t);
+};
 
 // ======================
-// تهيئة المشهد والكاميرا
+// تهيئة المشهد
 // ======================
-init();
-
-function init() {
+try {
+  console.log('🔄 بدء التهيئة...');
+  
   scene = new THREE.Scene();
+  console.log('✅ Scene created');
 
-  camera = new THREE.PerspectiveCamera(
-    75,
-    window.innerWidth / window.innerHeight,
-    0.1,
-    2000
-  );
-
-  // 🔴 التعديل الأهم: الكاميرا داخل الكرة
+  camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 2000);
   camera.position.set(0, 0, 0.1);
+  console.log('✅ Camera created');
 
   renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
   renderer.setSize(window.innerWidth, window.innerHeight);
   renderer.setPixelRatio(window.devicePixelRatio);
   document.getElementById('container').appendChild(renderer.domElement);
+  console.log('✅ Renderer created');
 
-  // تحكم OrbitControls
   controls = new OrbitControls(camera, renderer.domElement);
   controls.enableZoom = true;
   controls.enablePan = false;
   controls.enableDamping = true;
-  controls.enableRotate = true;
   controls.autoRotate = autorotate;
-  controls.autoRotateSpeed = 0.2;
   controls.target.set(0, 0, 0);
-  controls.update();
+  console.log('✅ Controls created');
 
+  // إضاءة
   const ambientLight = new THREE.AmbientLight(0xffffff, 1.2);
   scene.add(ambientLight);
+  console.log('✅ Lights added');
 
+  // تحميل البانوراما
   loadPanorama();
+  
+  // إعداد الأحداث
   setupEvents();
+  
+  // بدء الرسوم المتحركة
   animate();
+  
+  console.log('✅ Initialization complete');
+  
+} catch (error) {
+  console.error('❌ خطأ في التهيئة:', error);
 }
 
 // ======================
 // تحميل البانوراما
 // ======================
 function loadPanorama() {
+  console.log('🔄 جاري تحميل البانوراما...');
+  
   const loader = new THREE.TextureLoader();
+  
+  // محاولة تحميل الصورة
   loader.load(
     './textures/StartPoint.jpg',
     (texture) => {
+      console.log('✅ Texture loaded successfully');
+      
       texture.colorSpace = THREE.SRGBColorSpace;
-      texture.wrapS = THREE.RepeatWrapping;
-      texture.wrapT = THREE.RepeatWrapping;
-      texture.repeat.x = -1;
-
+      
       const geometry = new THREE.SphereGeometry(500, 128, 128);
       const material = new THREE.MeshBasicMaterial({
         map: texture,
-        side: THREE.BackSide // 🔴 مهم للرؤية من الداخل
+        side: THREE.BackSide
       });
 
-      if (sphereMesh) scene.remove(sphereMesh);
       sphereMesh = new THREE.Mesh(geometry, material);
       scene.add(sphereMesh);
-
-      // إخفاء شاشة التحميل
-      document.getElementById('loader').style.display = 'none';
-
-      console.log('✅ Panorama Loaded');
-      console.log('Camera position:', camera.position);
       
-      // إضافة معاينة المؤشر بعد تحميل الكرة
-      setupMarkerPreview();
+      console.log('✅ Panorama added to scene');
+      
+      // إخفاء شاشة التحميل
+      const loader = document.getElementById('loader');
+      if (loader) loader.style.display = 'none';
+      
+      // إظهار زر التثبيت
+      const finalizeBtn = document.getElementById('finalizeBtn');
+      if (finalizeBtn) finalizeBtn.style.display = 'block';
     },
-    undefined,
-    (err) => {
-      console.error('❌ خطأ تحميل البانوراما:', err);
-      // في حالة الخطأ، نخفي شاشة التحميل أيضاً
-      document.getElementById('loader').style.display = 'none';
+    (progress) => {
+      console.log(`⏳ تحميل: ${Math.round(progress.loaded / progress.total * 100)}%`);
+    },
+    (error) => {
+      console.error('❌ فشل تحميل الصورة:', error);
+      
+      // إنشاء كرة اختبارية
+      createTestSphere();
     }
   );
 }
 
 // ======================
-// إعداد معاينة المؤشر
+// إنشاء كرة اختبارية
 // ======================
-function setupMarkerPreview() {
-  const markerPreview = new THREE.Mesh(
-    new THREE.SphereGeometry(5, 12, 12),
-    new THREE.MeshStandardMaterial({ color: 0xffffff, emissive: 0xffffff, emissiveIntensity: 0.5 })
-  );
-  scene.add(markerPreview);
-  markerPreview.visible = false;
-
-  // تحديث دالة onMouseMove لاستخدام markerPreview
-  window.markerPreview = markerPreview;
+function createTestSphere() {
+  console.log('🔄 إنشاء كرة اختبارية');
+  
+  const geometry = new THREE.SphereGeometry(500, 64, 64);
+  const material = new THREE.MeshBasicMaterial({
+    color: 0x224466,
+    wireframe: true,
+    side: THREE.BackSide
+  });
+  
+  sphereMesh = new THREE.Mesh(geometry, material);
+  scene.add(sphereMesh);
+  
+  console.log('✅ Test sphere created');
+  
+  // إخفاء شاشة التحميل
+  const loader = document.getElementById('loader');
+  if (loader) loader.style.display = 'none';
 }
 
 // ======================
-// الرسم بالماوس
+// إعداد الأحداث
+// ======================
+function setupEvents() {
+  console.log('🔄 إعداد الأحداث...');
+  
+  // أزرار التحكم
+  const toggleRotate = document.getElementById('toggleRotate');
+  if (toggleRotate) {
+    toggleRotate.onclick = () => {
+      autorotate = !autorotate;
+      controls.autoRotate = autorotate;
+      toggleRotate.textContent = autorotate ? '⏸️ إيقاف التدوير' : '▶️ تشغيل التدوير';
+    };
+  }
+
+  const toggleDraw = document.getElementById('toggleDraw');
+  if (toggleDraw) {
+    toggleDraw.onclick = () => {
+      drawMode = !drawMode;
+      document.body.style.cursor = drawMode ? 'crosshair' : 'default';
+      toggleDraw.textContent = drawMode ? '⛔ إيقاف الرسم' : '✏️ تفعيل الرسم';
+      toggleDraw.style.background = drawMode ? '#aa3333' : 'rgba(20, 30, 40, 0.9)';
+    };
+  }
+
+  const finalizeBtn = document.getElementById('finalizeBtn');
+  if (finalizeBtn) {
+    finalizeBtn.onclick = saveCurrentPath;
+  }
+
+  // أحداث الماوس
+  renderer.domElement.addEventListener('click', onClick);
+  renderer.domElement.addEventListener('mousemove', onMouseMove);
+  
+  window.addEventListener('keydown', onKeyDown);
+  window.addEventListener('resize', onResize);
+  
+  console.log('✅ Events setup complete');
+}
+
+// ======================
+// بقية الدوال
 // ======================
 const mouse = new THREE.Vector2();
 const raycaster = new THREE.Raycaster();
 
 function onClick(e) {
   if (!drawMode || !sphereMesh) return;
-  if (e.target !== renderer.domElement) return;
-
-  mouse.x = (e.clientX / renderer.domElement.clientWidth) * 2 - 1;
-  mouse.y = -(e.clientY / renderer.domElement.clientHeight) * 2 + 1;
-
-  raycaster.setFromCamera(mouse, camera);
-  const hits = raycaster.intersectObject(sphereMesh);
-
-  if (hits.length) addPoint(hits[0].point);
-}
-
-function onMouseMove(e) {
-  if (!drawMode || !sphereMesh || !window.markerPreview) { 
-    if (window.markerPreview) window.markerPreview.visible = false; 
-    return; 
-  }
-  if (e.target !== renderer.domElement) { 
-    window.markerPreview.visible = false; 
-    return; 
-  }
-
+  
   mouse.x = (e.clientX / renderer.domElement.clientWidth) * 2 - 1;
   mouse.y = -(e.clientY / renderer.domElement.clientHeight) * 2 + 1;
 
@@ -159,155 +208,57 @@ function onMouseMove(e) {
   const hits = raycaster.intersectObject(sphereMesh);
 
   if (hits.length) {
-    window.markerPreview.position.copy(hits[0].point);
-    window.markerPreview.visible = true;
-  } else window.markerPreview.visible = false;
+    addPoint(hits[0].point);
+  }
 }
 
-// ======================
-// إدارة النقاط والمسارات
-// ======================
+function onMouseMove(e) {
+  // يمكن إضافة معاينة هنا لاحقاً
+}
+
 function addPoint(pos) {
   selectedPoints.push(pos.clone());
-
-  const g = new THREE.SphereGeometry(5, 12, 12);
-  const m = new THREE.MeshStandardMaterial({
-    color: pathColors[currentPathType],
-    emissive: pathColors[currentPathType],
-    emissiveIntensity: 0.5
-  });
-  const marker = new THREE.Mesh(g, m);
-  marker.position.copy(pos);
-  scene.add(marker);
-  pointMarkers.push(marker);
-
+  console.log('📍 نقطة مضافة:', selectedPoints.length);
   updateTempLine();
 }
 
 function updateTempLine() {
-  if (tempLine) {
-    scene.remove(tempLine);
-    tempLine.geometry.dispose();
-    tempLine = null;
-  }
-  if (selectedPoints.length < 2) return;
-
-  const g = new THREE.BufferGeometry().setFromPoints(selectedPoints);
-  const m = new THREE.LineBasicMaterial({ color: pathColors[currentPathType], linewidth: 2 });
-  tempLine = new THREE.Line(g, m);
-  scene.add(tempLine);
+  // سيتم تنفيذها لاحقاً
 }
 
 function saveCurrentPath() {
-  if (selectedPoints.length < 2) return;
-
-  const curve = new THREE.CatmullRomCurve3(selectedPoints);
-  const tubeGeo = new THREE.TubeGeometry(curve, 100, 3, 8, false);
-  const mat = new THREE.MeshStandardMaterial({
-    color: pathColors[currentPathType],
-    emissive: pathColors[currentPathType],
-    emissiveIntensity: 0.3,
-    roughness: 0.3,
-    metalness: 0.2
-  });
-
-  const pathMesh = new THREE.Mesh(tubeGeo, mat);
-  pathMesh.userData = { type: currentPathType, points: [...selectedPoints], createdAt: Date.now() };
-  scene.add(pathMesh);
-  paths.push(pathMesh);
-
-  clearCurrentDrawing();
-}
-
-function clearCurrentDrawing() {
-  selectedPoints = [];
-  pointMarkers.forEach(m => scene.remove(m));
-  pointMarkers = [];
-  if (tempLine) { 
-    scene.remove(tempLine); 
-    tempLine.geometry.dispose(); 
-    tempLine = null; 
+  if (selectedPoints.length < 2) {
+    alert('⚠️ أضف نقطتين على الأقل');
+    return;
   }
+  console.log('💾 حفظ المسار');
+  selectedPoints = [];
 }
 
-// ======================
-// لوحة المفاتيح
-// ======================
 function onKeyDown(e) {
   if (!drawMode) return;
-
+  
   switch(e.key) {
-    case 'Enter': saveCurrentPath(); break;
+    case 'Enter':
+      e.preventDefault();
+      saveCurrentPath();
+      break;
     case 'Backspace':
-      if (selectedPoints.length>0){
+      e.preventDefault();
+      if (selectedPoints.length > 0) {
         selectedPoints.pop();
-        const last = pointMarkers.pop();
-        if(last) scene.remove(last);
-        updateTempLine();
+        console.log('⏪ تراجع، النقاط المتبقية:', selectedPoints.length);
       }
       break;
-    case 'Escape': clearCurrentDrawing(); break;
-    case 'n': case 'N': clearCurrentDrawing(); break;
-    case '1': currentPathType='EL'; break;
-    case '2': currentPathType='AC'; break;
-    case '3': currentPathType='WP'; break;
-    case '4': currentPathType='WA'; break;
-    case '5': currentPathType='GS'; break;
   }
 }
 
-// ======================
-// إعداد الأحداث + زر Finalize
-// ======================
-function setupEvents() {
-  renderer.domElement.addEventListener('click', onClick);
-  renderer.domElement.addEventListener('mousemove', onMouseMove);
-  window.addEventListener('keydown', onKeyDown);
-  window.addEventListener('resize', onResize);
-
-  document.getElementById('toggleRotate').onclick = () => {
-    autorotate = !autorotate;
-    controls.autoRotate = autorotate;
-  };
-
-  document.getElementById('toggleDraw').onclick = () => {
-    drawMode = !drawMode;
-    document.body.style.cursor = drawMode ? 'crosshair' : 'default';
-    if (window.markerPreview) window.markerPreview.visible = drawMode;
-    controls.enableRotate = !drawMode; // تعطيل التدوير أثناء الرسم
-    controls.autoRotate = autorotate && !drawMode;
-  };
-
-  // زر تثبيت المسار
-  const finalizeBtn = document.createElement('button');
-  finalizeBtn.textContent = '💾 تثبيت المسار';
-  finalizeBtn.style.position = 'absolute';
-  finalizeBtn.style.bottom = '25px';
-  finalizeBtn.style.left = '400px';
-  finalizeBtn.style.padding = '12px 24px';
-  finalizeBtn.style.zIndex = '100';
-  finalizeBtn.style.borderRadius = '40px';
-  finalizeBtn.style.background = '#228822';
-  finalizeBtn.style.color = 'white';
-  finalizeBtn.style.fontWeight = 'bold';
-  finalizeBtn.style.cursor = 'pointer';
-  document.body.appendChild(finalizeBtn);
-
-  finalizeBtn.onclick = () => saveCurrentPath();
-}
-
-// ======================
-// Resize
-// ======================
 function onResize() {
-  camera.aspect = window.innerWidth/window.innerHeight;
+  camera.aspect = window.innerWidth / window.innerHeight;
   camera.updateProjectionMatrix();
   renderer.setSize(window.innerWidth, window.innerHeight);
 }
 
-// ======================
-// Animate
-// ======================
 function animate() {
   requestAnimationFrame(animate);
   controls.update();
