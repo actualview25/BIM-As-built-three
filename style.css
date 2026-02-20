@@ -70,36 +70,36 @@ button {
 .WA { background:#ff3300 }
 .GS { background:#33cc33 }
 
-/* تنسيق أزرار التصدير */
+/* تنسيق أزرار التصدير الجديدة */
 button[style*="8844aa"] {
   background: linear-gradient(135deg, #8844aa, #aa66cc) !important;
   border-color: #cc88ff !important;
+  box-shadow: 0 4px 15px rgba(136, 68, 170, 0.5);
 }
 
 button[style*="448844"] {
   background: linear-gradient(135deg, #448844, #66aa66) !important;
   border-color: #88ff88 !important;
+  box-shadow: 0 4px 15px rgba(68, 136, 68, 0.5);
 }
 
 button[style*="aa44aa"] {
   background: linear-gradient(135deg, #aa44aa, #cc66cc) !important;
   border-color: #ff88ff !important;
+  box-shadow: 0 4px 15px rgba(170, 68, 170, 0.5);
 }
 
-/* تأثيرات hover لأزرار التصدير */
-button[style*="8844aa"]:hover,
-button[style*="448844"]:hover,
-button[style*="aa44aa"]:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(0,0,0,0.6);
+/* مجموعة الأزرار العمودية */
+div[style*="flex-direction: column"] {
+  backdrop-filter: blur(10px);
+  background: rgba(0, 0, 0, 0.7);
+  padding: 15px;
+  border-radius: 20px;
+  border: 2px solid #4a6c8f;
+  animation: slideIn 0.3s ease;
 }
 
-/* تنسيق نافذة الحوار */
-@keyframes fadeIn {
-  from { opacity: 0; transform: translate(-50%, -60%); }
-  to { opacity: 1; transform: translate(-50%, -50%); }
-}
-
-div[style*="position: fixed"] {
-  animation: fadeIn 0.3s ease;
+@keyframes slideIn {
+  from { transform: translateX(100px); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
 }
