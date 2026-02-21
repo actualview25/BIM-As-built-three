@@ -46,7 +46,6 @@ html, body {
   backdrop-filter: blur(10px);
   font-weight: bold;
   box-shadow: 0 5px 20px rgba(0,0,0,0.3);
-  direction: ltr;
 }
 
 /* =======================================
@@ -119,7 +118,7 @@ html, body {
 /* =======================================
    الحاوية الرئيسية للأزرار - أسفل المنتصف
    ======================================= */
-.button-container {
+.main-controls {
   position: fixed;
   bottom: 25px;
   left: 50%;
@@ -135,12 +134,7 @@ html, body {
   box-shadow: 0 10px 30px rgba(0,0,0,0.5);
 }
 
-/* أنماط الأزرار العامة */
-.button-container button,
-#toggleRotate,
-#toggleDraw,
-#finalizeBtn,
-#clearBtn {
+.main-controls button {
   padding: 10px 20px;
   border: none;
   border-radius: 30px;
@@ -152,17 +146,9 @@ html, body {
   min-width: 110px;
   border: 1px solid rgba(255,255,255,0.2);
   white-space: nowrap;
-  position: relative;
-  bottom: auto;
-  left: auto;
-  margin: 0;
 }
 
-.button-container button:hover,
-#toggleRotate:hover,
-#toggleDraw:hover,
-#finalizeBtn:hover,
-#clearBtn:hover {
+.main-controls button:hover {
   transform: translateY(-3px);
   box-shadow: 0 5px 15px rgba(0,0,0,0.4);
 }
@@ -213,16 +199,16 @@ html, body {
 }
 
 /* ألوان أزرار التصدير */
-.export-with { background: linear-gradient(135deg, #8844aa, #aa66cc); }
-.export-without { background: linear-gradient(135deg, #448844, #66aa66); }
-.export-data { background: linear-gradient(135deg, #aa44aa, #cc66cc); }
-.export-complete { background: linear-gradient(135deg, #ff8844, #ffaa66); }
+.export-controls button:first-child { background: linear-gradient(135deg, #8844aa, #aa66cc); }
+.export-controls button:nth-child(2) { background: linear-gradient(135deg, #448844, #66aa66); }
+.export-controls button:nth-child(3) { background: linear-gradient(135deg, #aa44aa, #cc66cc); }
+.export-controls button:last-child { background: linear-gradient(135deg, #ff8844, #ffaa66); }
 
 /* =======================================
    توافق مع الشاشات الصغيرة
    ======================================= */
 @media (max-width: 1200px) {
-  .button-container {
+  .main-controls {
     flex-wrap: wrap;
     width: 90%;
     bottom: 10px;
@@ -230,11 +216,7 @@ html, body {
     gap: 8px;
   }
   
-  .button-container button,
-  #toggleRotate,
-  #toggleDraw,
-  #finalizeBtn,
-  #clearBtn {
+  .main-controls button {
     flex: 1 1 auto;
     min-width: 80px;
     padding: 8px 12px;
@@ -258,7 +240,7 @@ html, body {
     max-width: 130px;
   }
   
-  .button-container {
+  .main-controls {
     bottom: 10px;
     padding: 8px;
   }
@@ -303,6 +285,6 @@ html, body {
   to { opacity: 1; transform: translateY(0); }
 }
 
-.button-container {
+.main-controls {
   animation: fadeIn 0.3s ease;
 }
