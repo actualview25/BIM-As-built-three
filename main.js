@@ -121,8 +121,7 @@ function loadPanorama() {
       if (loaderEl) loaderEl.style.display = 'none';
       
       setupMarkerPreview();
-      
-      // ❌ تم إزالة المسار التجريبي
+      addDemoPath();
     },
     (progress) => {
       console.log(`⏳ التحميل: ${Math.round((progress.loaded / progress.total) * 100)}%`);
@@ -150,6 +149,7 @@ function createTestSphere() {
   
   document.getElementById('loader').style.display = 'none';
   setupMarkerPreview();
+  addDemoPath();
 }
 
 // ======================
@@ -166,6 +166,30 @@ function setupMarkerPreview() {
   markerPreview = new THREE.Mesh(geometry, material);
   scene.add(markerPreview);
   markerPreview.visible = false;
+}
+
+// ======================
+// مسار تجريبي
+// ======================
+function addDemoPath() {
+  setTimeout(() => {
+    const points = [];
+    const radius = 400;
+    
+    points.push(new THREE.Vector3(radius, 0, 0).normalize().multiplyScalar(480));
+    points.push(new THREE.Vector3(0, radius * 0.7, radius * 0.7).normalize().multiplyScalar(480));
+    points.push(new THREE.Vector3(-radius, 0, 0).normalize().multiplyScalar(480));
+    points.push(new THREE.Vector3(0, -radius * 0.7, -radius * 0.7).normalize().multiplyScalar(480));
+    points.push(new THREE.Vector3(radius, 0, 0).normalize().multiplyScalar(480));
+    
+    selectedPoints = points;
+    points.forEach(point => addPointMarker(point));
+    updateTempLine();
+    
+    setTimeout(() => {
+      saveCurrentPath();
+    }, 2000);
+  }, 2000);
 }
 
 // ======================
@@ -373,10 +397,10 @@ function createStraightPath(points) {
 }
 
 // =======================================
-// نظام تصدير الصور البانورامية 360 درجة
+// نظام التصدير الذكي لـ Marzipano
 // =======================================
 
-// إعداد Canvas التصدير
+// إعداد Canvas للتصدير
 function setupExportCanvas() {
   exportCanvas = document.createElement('canvas');
   exportCanvas.width = 4096;
@@ -385,99 +409,22 @@ function setupExportCanvas() {
   console.log('✅ Canvas التصدير جاهز');
 }
 
-// دالة تحويل النقاط إلى إحداثيات الصورة
-function projectToUV(point) {
+// تحويل نقطة ثلاثية الأبعاد إلى yaw/pitch لـ Marzipano
+function pointToYawPitch(point) {
   const normalized = point.clone().normalize();
   
-  // theta: الزاوية من المحور Y (0 في القطب الشمالي، PI في القطب الجنوبي)
-  const theta = Math.acos(normalized.y);
+  // yaw: زاوية أفقية (0 إلى 2PI)
+  let yaw = Math.atan2(normalized.z, normalized.x);
+  yaw = (yaw + 2 * Math.PI) % (2 * Math.PI);
   
-  // phi: الزاوية حول المحور Y (-PI إلى PI)
-  let phi = Math.atan2(normalized.z, normalized.x);
+  // pitch: زاوية رأسية (-PI/2 إلى PI/2)
+  const pitch = Math.asin(normalized.y);
   
-  // تحويل phi إلى [0, 2PI]
-  phi = (phi + 2 * Math.PI) % (2 * Math.PI);
-  
-  // عكس phi لأن الصورة معكوسة
-  phi = (2 * Math.PI - phi) % (2 * Math.PI);
-  
-  // تحويل إلى إحداثيات الصورة
-  const u = phi / (2 * Math.PI);
-  const v = theta / Math.PI;
-  
-  return { u, v };
+  return { yaw, pitch };
 }
 
-// دالة رسم المسار على الصورة
-function drawPathOnCanvas(ctx, points, color, width = 4) {
-  if (points.length < 2) return;
-
-  ctx.save();
-  ctx.strokeStyle = color;
-  ctx.lineWidth = width;
-  ctx.lineCap = 'round';
-  ctx.lineJoin = 'round';
-
-  const uvPoints = points.map(p => projectToUV(p));
-
-  ctx.beginPath();
-  
-  for (let i = 0; i < uvPoints.length - 1; i++) {
-    const p1 = uvPoints[i];
-    const p2 = uvPoints[i + 1];
-
-    const x1 = p1.u * ctx.canvas.width;
-    const y1 = p1.v * ctx.canvas.height;
-    const x2 = p2.u * ctx.canvas.width;
-    const y2 = p2.v * ctx.canvas.height;
-
-    if (Math.abs(x2 - x1) > ctx.canvas.width / 2) {
-      ctx.stroke();
-      ctx.beginPath();
-      
-      if (x1 < ctx.canvas.width / 2) {
-        ctx.moveTo(x1, y1);
-        ctx.lineTo(ctx.canvas.width, y1);
-        ctx.stroke();
-        ctx.beginPath();
-        ctx.moveTo(0, y2);
-        ctx.lineTo(x2, y2);
-      } else {
-        ctx.moveTo(x1, y1);
-        ctx.lineTo(0, y1);
-        ctx.stroke();
-        ctx.beginPath();
-        ctx.moveTo(ctx.canvas.width, y2);
-        ctx.lineTo(x2, y2);
-      }
-    } else {
-      ctx.moveTo(x1, y1);
-      ctx.lineTo(x2, y2);
-    }
-  }
-  
-  ctx.stroke();
-
-  uvPoints.forEach((uv, index) => {
-    const x = uv.u * ctx.canvas.width;
-    const y = uv.v * ctx.canvas.height;
-    const radius = (index === 0 || index === uvPoints.length - 1) ? width * 2.5 : width * 2;
-
-    ctx.beginPath();
-    ctx.fillStyle = color;
-    ctx.arc(x, y, radius, 0, Math.PI * 2);
-    ctx.fill();
-    
-    ctx.strokeStyle = '#ffffff';
-    ctx.lineWidth = 2;
-    ctx.stroke();
-  });
-
-  ctx.restore();
-}
-
-// دالة تصدير البانوراما
-function exportPanorama(includePaths = true) {
+// دالة التصدير الرئيسية (زر واحد يفعل كل شيء)
+function exportForMarzipano() {
   if (isExporting) {
     console.log('⏳ جاري التصدير بالفعل...');
     return;
@@ -489,110 +436,99 @@ function exportPanorama(includePaths = true) {
   }
 
   isExporting = true;
-  console.log(`🔄 جاري تصدير البانوراما 360 ${includePaths ? 'مع' : 'بدون'} المسارات...`);
+  console.log('🎯 بدء تصدير حزمة Marzipano المتكاملة...');
 
+  // 1. الحصول على الصورة الأصلية
   const texture = sphereMesh.material.map;
   const image = texture.image;
 
-  exportContext.clearRect(0, 0, exportCanvas.width, exportCanvas.height);
-  exportContext.drawImage(image, 0, 0, exportCanvas.width, exportCanvas.height);
+  // 2. إنشاء مجلد وهمي للتصدير
+  const timestamp = Date.now();
+  const folderName = `marzipano-export-${timestamp}`;
 
-  if (includePaths) {
-    paths.forEach(path => {
-      if (path.userData && path.userData.points && path.userData.points.length > 0) {
-        const points = path.userData.points;
-        const color = pathColors[path.userData.type] || 0xffcc00;
-        const colorStr = '#' + color.toString(16).padStart(6, '0');
-        drawPathOnCanvas(exportContext, points, colorStr, 4);
-      }
-    });
-
-    if (selectedPoints.length > 0) {
-      const colorStr = '#' + pathColors[currentPathType].toString(16).padStart(6, '0');
-      drawPathOnCanvas(exportContext, selectedPoints, colorStr, 3);
-    }
-  }
-
-  try {
-    const dataURL = exportCanvas.toDataURL('image/png');
-    const link = document.createElement('a');
-    link.download = `panorama-360-${includePaths ? 'with-paths' : 'without-paths'}-${Date.now()}.png`;
-    link.href = dataURL;
-    link.click();
-    console.log('✅ تم تصدير البانوراما بنجاح');
-  } catch (error) {
-    console.error('❌ خطأ في تصدير البانوراما:', error);
-    alert('حدث خطأ في تصدير الصورة');
-  }
-
-  isExporting = false;
-}
-
-// دالة تصدير بيانات Marzipano
-function exportMarzipanoData() {
-  if (!sphereMesh || !sphereMesh.material || !sphereMesh.material.map) {
-    alert('❌ الصورة البانورامية غير متوفرة');
-    return;
-  }
-
-  console.log('🎯 تحضير بيانات Marzipano...');
-
+  // 3. تجميع بيانات المسارات
   const pathsData = [];
-
+  
   paths.forEach(path => {
     if (path.userData && path.userData.points && path.userData.points.length > 0) {
       const points = path.userData.points;
-      const uvPoints = points.map(p => {
-        const uv = projectToUV(p);
-        return [uv.u, uv.v];
+      
+      // تحويل كل نقطة إلى yaw/pitch
+      const coordinates = points.map(p => {
+        const { yaw, pitch } = pointToYawPitch(p);
+        return {
+          x: yaw,
+          y: pitch,
+          type: path.userData.type
+        };
       });
 
       pathsData.push({
         type: path.userData.type,
         color: '#' + pathColors[path.userData.type].toString(16).padStart(6, '0'),
-        points: uvPoints
+        points: points.map(p => {
+          const { yaw, pitch } = pointToYawPitch(p);
+          return [yaw, pitch];
+        }),
+        coordinates: coordinates
       });
     }
   });
 
-  if (selectedPoints.length > 0) {
-    const uvPoints = selectedPoints.map(p => {
-      const uv = projectToUV(p);
-      return [uv.u, uv.v];
-    });
-
-    pathsData.push({
-      type: currentPathType,
-      color: '#' + pathColors[currentPathType].toString(16).padStart(6, '0'),
-      points: uvPoints,
-      isTemporary: true
-    });
-  }
-
+  // 4. إنشاء ملف JSON الرئيسي
   const marzipanoData = {
     version: "1.0",
-    timestamp: Date.now(),
-    imageSize: [exportCanvas.width, exportCanvas.height],
-    paths: pathsData
+    timestamp: timestamp,
+    name: "BIM Virtual Tour Export",
+    image: {
+      filename: `panorama-${timestamp}.jpg`,
+      width: exportCanvas.width,
+      height: exportCanvas.height
+    },
+    paths: pathsData,
+    metadata: {
+      totalPaths: pathsData.length,
+      types: Object.keys(pathColors).map(key => ({
+        type: key,
+        color: '#' + pathColors[key].toString(16).padStart(6, '0')
+      }))
+    }
   };
 
-  const jsonStr = JSON.stringify(marzipanoData, null, 2);
-  const jsonBlob = new Blob([jsonStr], { type: 'application/json' });
-  const jsonUrl = URL.createObjectURL(jsonBlob);
+  // 5. تصدير الصورة (JPEG للتوافق مع Marzipano)
+  exportContext.clearRect(0, 0, exportCanvas.width, exportCanvas.height);
+  exportContext.drawImage(image, 0, 0, exportCanvas.width, exportCanvas.height);
+  
+  // 6. تصدير كل شيء
+  try {
+    // تصدير الصورة
+    const imageDataURL = exportCanvas.toDataURL('image/jpeg', 0.95);
+    const imageLink = document.createElement('a');
+    imageLink.download = `panorama-${timestamp}.jpg`;
+    imageLink.href = imageDataURL;
+    imageLink.click();
 
-  const jsonLink = document.createElement('a');
-  jsonLink.download = `marzipano-paths-${Date.now()}.json`;
-  jsonLink.href = jsonUrl;
-  jsonLink.click();
+    // تصدير ملف JSON
+    setTimeout(() => {
+      const jsonStr = JSON.stringify(marzipanoData, null, 2);
+      const jsonBlob = new Blob([jsonStr], { type: 'application/json' });
+      const jsonUrl = URL.createObjectURL(jsonBlob);
+      
+      const jsonLink = document.createElement('a');
+      jsonLink.download = `marzipano-data-${timestamp}.json`;
+      jsonLink.href = jsonUrl;
+      jsonLink.click();
+      
+      console.log('✅ تم تصدير حزمة Marzipano بنجاح');
+      alert(`✅ تم التصدير بنجاح!\n📸 الصورة: panorama-${timestamp}.jpg\n📊 البيانات: marzipano-data-${timestamp}.json`);
+    }, 500);
 
-  console.log('✅ تم تصدير بيانات Marzipano');
-}
+  } catch (error) {
+    console.error('❌ خطأ في التصدير:', error);
+    alert('حدث خطأ في التصدير');
+  }
 
-function exportComplete() {
-  exportPanorama(true);
-  setTimeout(() => {
-    exportMarzipanoData();
-  }, 500);
+  isExporting = false;
 }
 
 // ======================
@@ -736,33 +672,25 @@ function setupEvents() {
     }
   };
   
-  addExportButtons();
-}
+  // زر التصدير الذكي - زر واحد فقط!
+  const exportBtn = document.createElement('button');
+  exportBtn.id = 'exportMarzipanoBtn';
+  exportBtn.textContent = '📦 تصدير Marzipano';
+  exportBtn.style.position = 'absolute';
+  exportBtn.style.bottom = '25px';
+  exportBtn.style.left = '725px';
+  exportBtn.style.padding = '12px 24px';
+  exportBtn.style.zIndex = '100';
+  exportBtn.style.borderRadius = '40px';
+  exportBtn.style.background = '#8844aa';
+  exportBtn.style.color = 'white';
+  exportBtn.style.fontWeight = 'bold';
+  exportBtn.style.border = '2px solid #cc88ff';
+  exportBtn.style.cursor = 'pointer';
+  exportBtn.style.fontSize = '16px';
+  document.body.appendChild(exportBtn);
 
-// ======================
-// إضافة أزرار التصدير
-// ======================
-function addExportButtons() {
-  const oldExport = document.querySelector('.export-controls');
-  if (oldExport) oldExport.remove();
-
-  const exportDiv = document.createElement('div');
-  exportDiv.className = 'export-controls';
-  exportDiv.innerHTML = `
-    <button id="exportWithPaths">🌐 تصدير مع المسارات</button>
-    <button id="exportWithoutPaths">🌅 تصدير بدون مسارات</button>
-    <button id="exportMarzipano">📊 تصدير بيانات Marzipano</button>
-    <button id="exportComplete">📦 تصدير كامل</button>
-  `;
-  
-  document.body.appendChild(exportDiv);
-
-  document.getElementById('exportWithPaths').onclick = () => exportPanorama(true);
-  document.getElementById('exportWithoutPaths').onclick = () => exportPanorama(false);
-  document.getElementById('exportMarzipano').onclick = exportMarzipanoData;
-  document.getElementById('exportComplete').onclick = exportComplete;
-  
-  console.log('✅ أزرار التصدير تمت إضافتها');
+  exportBtn.onclick = exportForMarzipano;
 }
 
 // ======================
@@ -782,4 +710,19 @@ function animate() {
   controls.update();
   renderer.render(scene, camera);
 }
-  
+```
+
+ملف style.css (أضف هذا السطر في النهاية):
+
+```css
+/* زر تصدير Marzipano */
+#exportMarzipanoBtn {
+  background: linear-gradient(135deg, #8844aa, #aa66cc) !important;
+  border-color: #cc88ff !important;
+  box-shadow: 0 4px 15px rgba(136, 68, 170, 0.5);
+}
+
+#exportMarzipanoBtn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(136, 68, 170, 0.7);
+}
