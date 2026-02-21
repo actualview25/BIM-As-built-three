@@ -394,17 +394,72 @@ function setupExportCanvas() {
   console.log('✅ Canvas التصدير جاهز');
 }
 
+// =======================================
+// دالة تحويل محسنة - تضبط مكان المسارات بشكل صحيح
+// =======================================
 function projectToUV(point) {
   const normalized = point.clone().normalize();
+  
+  // تحويل إلى إحداثيات كروية
+  // theta: الزاوية من المحور Y (0 إلى PI)
   const theta = Math.acos(normalized.y);
+  
+  // phi: الزاوية حول المحور Y (-PI إلى PI)
   let phi = Math.atan2(normalized.z, normalized.x);
-  phi = -phi;
-  let u = (phi + Math.PI) / (2 * Math.PI);
+  
+  // تعديل مهم جداً لضبط اتجاه الصورة
+  // نجعل phi تبدأ من 0 عند المحور X الموجب وتزيد باتجاه عقارب الساعة
+  phi = -phi; // عكس الاتجاه
+  
+  // تحويل phi إلى النطاق 0 إلى 2PI
+  phi = (phi + 2 * Math.PI) % (2 * Math.PI);
+  
+  // تحويل إلى إحداثيات الصورة (0 إلى 1)
+  const u = phi / (2 * Math.PI);
   const v = theta / Math.PI;
-  u = (u + 1) % 1;
+  
   return { u, v };
 }
 
+// =======================================
+// دالة اختبارية لرسم نقاط ثابتة للتحقق
+// =======================================
+function drawTestPoints(ctx) {
+  // رسم خط أفقي في المنتصف
+  ctx.save();
+  ctx.strokeStyle = '#ff0000';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(0, ctx.canvas.height/2);
+  ctx.lineTo(ctx.canvas.width, ctx.canvas.height/2);
+  ctx.stroke();
+  
+  // رسم خط عمودي في المنتصف
+  ctx.strokeStyle = '#00ff00';
+  ctx.beginPath();
+  ctx.moveTo(ctx.canvas.width/2, 0);
+  ctx.lineTo(ctx.canvas.width/2, ctx.canvas.height);
+  ctx.stroke();
+  
+  // رسم نقاط في الزوايا
+  ctx.fillStyle = '#ffff00';
+  const points = [
+    [0, 0], [ctx.canvas.width, 0],
+    [0, ctx.canvas.height], [ctx.canvas.width, ctx.canvas.height]
+  ];
+  
+  points.forEach(([x, y]) => {
+    ctx.beginPath();
+    ctx.arc(x, y, 10, 0, 2 * Math.PI);
+    ctx.fill();
+  });
+  
+  ctx.restore();
+}
+
+// =======================================
+// دالة رسم المسار على الصورة (محدثة)
+// =======================================
 function drawPathOnCanvas(ctx, points, color, width = 4) {
   if (points.length < 2) return;
 
@@ -414,35 +469,54 @@ function drawPathOnCanvas(ctx, points, color, width = 4) {
   ctx.lineCap = 'round';
   ctx.lineJoin = 'round';
 
+  // تحويل جميع النقاط إلى إحداثيات UV
   const uvPoints = points.map(p => projectToUV(p));
+  
+  // للتأكد من الإحداثيات، اطبع أول نقطة في الكونسول
+  if (points === selectedPoints && points.length > 0) {
+    console.log('🔍 أول نقطة:', {
+      original: points[0],
+      uv: uvPoints[0],
+      x: uvPoints[0].u * ctx.canvas.width,
+      y: uvPoints[0].v * ctx.canvas.height
+    });
+  }
 
   ctx.beginPath();
+  
   for (let i = 0; i < uvPoints.length - 1; i++) {
     const p1 = uvPoints[i];
     const p2 = uvPoints[i + 1];
 
-    const x1 = p1.u * exportCanvas.width;
-    const y1 = p1.v * exportCanvas.height;
-    const x2 = p2.u * exportCanvas.width;
-    const y2 = p2.v * exportCanvas.height;
+    const x1 = p1.u * ctx.canvas.width;
+    const y1 = p1.v * ctx.canvas.height;
+    const x2 = p2.u * ctx.canvas.width;
+    const y2 = p2.v * ctx.canvas.height;
 
-    if (Math.abs(x2 - x1) > exportCanvas.width / 2) {
+    // التعامل مع عبور الحافة
+    if (Math.abs(x2 - x1) > ctx.canvas.width / 2) {
       ctx.stroke();
       ctx.beginPath();
       
-      if (x1 < exportCanvas.width / 2) {
+      if (x1 < ctx.canvas.width / 2) {
+        // من x1 إلى الحافة اليمنى
         ctx.moveTo(x1, y1);
-        ctx.lineTo(exportCanvas.width, y1);
+        ctx.lineTo(ctx.canvas.width, y1);
         ctx.stroke();
+        
+        // من الحافة اليسرى إلى x2
         ctx.beginPath();
         ctx.moveTo(0, y2);
         ctx.lineTo(x2, y2);
       } else {
+        // من x1 إلى الحافة اليسرى
         ctx.moveTo(x1, y1);
         ctx.lineTo(0, y1);
         ctx.stroke();
+        
+        // من الحافة اليمنى إلى x2
         ctx.beginPath();
-        ctx.moveTo(exportCanvas.width, y2);
+        ctx.moveTo(ctx.canvas.width, y2);
         ctx.lineTo(x2, y2);
       }
     } else {
@@ -450,11 +524,15 @@ function drawPathOnCanvas(ctx, points, color, width = 4) {
       ctx.lineTo(x2, y2);
     }
   }
+  
   ctx.stroke();
 
+  // رسم النقاط
   uvPoints.forEach((uv, index) => {
-    const x = uv.u * exportCanvas.width;
-    const y = uv.v * exportCanvas.height;
+    const x = uv.u * ctx.canvas.width;
+    const y = uv.v * ctx.canvas.height;
+    
+    // حجم مختلف للنقاط (البداية والنهاية أكبر)
     const radius = (index === 0 || index === uvPoints.length - 1) ? width * 2.5 : width * 2;
 
     ctx.beginPath();
@@ -462,6 +540,7 @@ function drawPathOnCanvas(ctx, points, color, width = 4) {
     ctx.arc(x, y, radius, 0, Math.PI * 2);
     ctx.fill();
     
+    // حدود بيضاء حول النقاط
     ctx.strokeStyle = '#ffffff';
     ctx.lineWidth = 2;
     ctx.stroke();
@@ -470,7 +549,10 @@ function drawPathOnCanvas(ctx, points, color, width = 4) {
   ctx.restore();
 }
 
-function exportPanorama(includePaths = true) {
+// =======================================
+// دالة التصدير مع إمكانية اختبار الإحداثيات
+// =======================================
+function exportPanorama(includePaths = true, debug = false) {
   if (isExporting) {
     console.log('⏳ جاري التصدير بالفعل...');
     return;
@@ -487,40 +569,66 @@ function exportPanorama(includePaths = true) {
   const texture = sphereMesh.material.map;
   const image = texture.image;
 
+  // مسح الرسم السابق
   exportContext.clearRect(0, 0, exportCanvas.width, exportCanvas.height);
+  
+  // رسم الصورة الأصلية
   exportContext.drawImage(image, 0, 0, exportCanvas.width, exportCanvas.height);
 
+  // إذا أردنا اختبار الإحداثيات
+  if (debug) {
+    drawTestPoints(exportContext);
+  }
+
+  // رسم المسارات إذا طلب ذلك
   if (includePaths) {
-    console.log(`📊 عدد المسارات الحقيقية: ${paths.length}`);
+    console.log(`📊 عدد المسارات: ${paths.length}`);
     
-    // رسم المسارات الحقيقية فقط (التي أضافها المستخدم)
+    // رسم جميع المسارات المحفوظة
     paths.forEach(path => {
       if (path.userData && path.userData.points && path.userData.points.length > 0) {
         const points = path.userData.points;
         const color = pathColors[path.userData.type] || 0xffcc00;
         const colorStr = '#' + color.toString(16).padStart(6, '0');
+        
         drawPathOnCanvas(exportContext, points, colorStr, 4);
-        console.log(`🎨 رسم مسار من نوع ${path.userData.type}`);
+        console.log(`🎨 رسم مسار ${path.userData.type} بعدد نقاط: ${points.length}`);
       }
     });
 
-    // رسم النقاط المحددة حالياً (إذا وجدت)
+    // رسم المسار الحالي (إذا كان قيد الإنشاء)
     if (selectedPoints.length > 0) {
       const colorStr = '#' + pathColors[currentPathType].toString(16).padStart(6, '0');
       drawPathOnCanvas(exportContext, selectedPoints, colorStr, 3);
-      console.log(`✏️ رسم نقاط مؤقتة: ${selectedPoints.length}`);
+      console.log(`✏️ رسم مسار مؤقت بعدد نقاط: ${selectedPoints.length}`);
     }
   }
 
   try {
+    // تصدير الصورة
     const dataURL = exportCanvas.toDataURL('image/png');
     const link = document.createElement('a');
     link.download = `panorama-360-${includePaths ? 'with-paths' : 'without-paths'}-${Date.now()}.png`;
     link.href = dataURL;
     link.click();
-    console.log('✅ تم تصدير البانوراما 360 بنجاح');
+    
+    console.log('✅ تم تصدير البانوراما بنجاح');
+    
+    // فتح الصورة في نافذة جديدة للمعاينة
+    if (debug) {
+      const previewWindow = window.open('');
+      previewWindow.document.write(`
+        <html>
+          <head><title>معاينة البانوراما</title></head>
+          <body style="margin:0; background:#000;">
+            <img src="${dataURL}" style="width:100%; height:auto;">
+          </body>
+        </html>
+      `);
+    }
+    
   } catch (error) {
-    console.error('❌ خطأ في تصدير البانوراما:', error);
+    console.error('❌ خطأ في التصدير:', error);
     alert('حدث خطأ في تصدير الصورة');
   }
 
