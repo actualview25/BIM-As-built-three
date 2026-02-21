@@ -32,10 +32,25 @@ button {
   border-radius: 30px;
   cursor: pointer;
   z-index: 100;
+  border: none;
+  font-weight: bold;
+  transition: all 0.3s ease;
 }
 
-#toggleRotate { left: 25px; }
-#toggleDraw   { left: 200px; }
+button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+}
+
+#toggleRotate { left: 25px; background: #4a6c8f; }
+#toggleDraw { left: 200px; background: #8f6c4a; }
+#finalizeBtn { left: 375px; background: #228822; }
+#clearBtn { left: 550px; background: #882222; }
+#exportMarzipanoBtn { 
+  left: 725px; 
+  background: linear-gradient(135deg, #8844aa, #aa66cc);
+  border: 2px solid #cc88ff;
+}
 
 .status-bar {
   position: absolute;
@@ -46,6 +61,8 @@ button {
   padding: 8px 14px;
   border-radius: 20px;
   z-index: 100;
+  border: 2px solid #4a6c8f;
+  font-weight: bold;
 }
 
 .color-panel {
@@ -55,6 +72,10 @@ button {
   display: flex;
   gap: 10px;
   z-index: 100;
+  background: rgba(0,0,0,0.7);
+  padding: 8px 12px;
+  border-radius: 30px;
+  border: 2px solid #4a6c8f;
 }
 
 .color-btn {
@@ -62,22 +83,33 @@ button {
   height: 36px;
   border-radius: 50%;
   cursor: pointer;
+  border: 2px solid white;
+  transition: all 0.3s ease;
 }
 
-.EL { background:#ffcc00 }
-.AC { background:#00ccff }
-.WP { background:#0066cc }
-.WA { background:#ff3300 }
-.GS { background:#33cc33 }
-
-/* زر تصدير Marzipano */
-#exportMarzipanoBtn {
-  background: linear-gradient(135deg, #8844aa, #aa66cc) !important;
-  border-color: #cc88ff !important;
-  box-shadow: 0 4px 15px rgba(136, 68, 170, 0.5);
+.color-btn:hover {
+  transform: scale(1.1);
+  box-shadow: 0 0 15px currentColor;
 }
 
-#exportMarzipanoBtn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 25px rgba(136, 68, 170, 0.7);
+.EL { background: #ffcc00; }
+.AC { background: #00ccff; }
+.WP { background: #0066cc; }
+.WA { background: #ff3300; }
+.GS { background: #33cc33; }
+
+.hint {
+  position: absolute;
+  bottom: 100px;
+  left: 20px;
+  background: rgba(0,0,0,0.7);
+  color: white;
+  padding: 15px 20px;
+  border-radius: 15px;
+  font-size: 14px;
+  line-height: 2;
+  z-index: 100;
+  border: 2px solid #4a6c8f;
+  direction: rtl;
+  text-align: right;
 }
