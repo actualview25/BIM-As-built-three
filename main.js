@@ -459,12 +459,9 @@ function drawPathOnImage(ctx, points, color, width = 4) {
   
   ctx.restore();
 }
-
-// دالة التصدير الرئيسية
-// دالة التصدير الرئيسية (محدثة)
-// =======================================
 // دالة التصدير النهائية - مضبوطة بالكامل
-// =======================================
+
+
 function exportForMarzipano() {
   if (isExporting) {
     console.log('⏳ جاري التصدير بالفعل...');
@@ -671,7 +668,6 @@ function exportForMarzipano() {
 
   isExporting = false;
 }
-// ======================
 // أحداث لوحة المفاتيح
 // ======================
 function onKeyDown(e) {
