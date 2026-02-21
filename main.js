@@ -122,7 +122,6 @@ function loadPanorama() {
       
       setupMarkerPreview();
       
-      // ❌ تم تعطيل المسار التجريبي نهائياً
       console.log('🚫 المسار التجريبي معطل');
     },
     (progress) => {
@@ -136,7 +135,7 @@ function loadPanorama() {
 }
 
 // ======================
-// إنشاء كرة اختبارية (بدون مسار تجريبي)
+// إنشاء كرة اختبارية
 // ======================
 function createTestSphere() {
   const geometry = new THREE.SphereGeometry(500, 64, 64);
@@ -168,14 +167,6 @@ function setupMarkerPreview() {
   markerPreview = new THREE.Mesh(geometry, material);
   scene.add(markerPreview);
   markerPreview.visible = false;
-}
-
-// ======================
-// ⚠️ دالة المسار التجريبي - معطلة تماماً
-// ======================
-function addDemoPath() {
-  // هذه الدالة لا تفعل شيئاً
-  return;
 }
 
 // ======================
@@ -309,6 +300,10 @@ function createStraightPath(points) {
   if (points.length < 2) return;
   
   const color = pathColors[currentPathType];
+  const pathId = `path-${Date.now()}-${Math.random()}`;
+  
+  // تخزين كل النقاط في مسار واحد
+  const allPoints = [];
   
   for (let i = 0; i < points.length - 1; i++) {
     const start = points[i];
@@ -343,8 +338,13 @@ function createStraightPath(points) {
     const center = new THREE.Vector3().addVectors(start, end).multiplyScalar(0.5);
     cylinder.position.copy(center);
     
+    // إضافة النقاط إلى المجموعة
+    if (i === 0) allPoints.push(start.clone());
+    allPoints.push(end.clone());
+    
     cylinder.userData = {
       type: currentPathType,
+      pathId: pathId,
       points: [start.clone(), end.clone()],
       isPathSegment: true
     };
@@ -353,10 +353,9 @@ function createStraightPath(points) {
     paths.push(cylinder);
   }
   
-  for (let i = 0; i < points.length; i++) {
-    const sphereRadius = (i === 0 || i === points.length - 1) ? 6 : 5;
-    
-    const sphereGeo = new THREE.SphereGeometry(sphereRadius, 24, 24);
+  // إضافة كرة عند نقطة البداية فقط (وليست كل النقاط)
+  if (points.length > 0) {
+    const sphereGeo = new THREE.SphereGeometry(6, 24, 24);
     const sphereMat = new THREE.MeshStandardMaterial({
       color: color,
       emissive: color,
@@ -366,20 +365,21 @@ function createStraightPath(points) {
     });
     
     const sphere = new THREE.Mesh(sphereGeo, sphereMat);
-    sphere.position.copy(points[i]);
+    sphere.position.copy(points[0]);
     
     sphere.userData = {
       type: currentPathType,
-      points: [points[i].clone()],
+      pathId: pathId,
+      points: [points[0].clone()],
       isJoint: true,
-      pointIndex: i
+      pointIndex: 0
     };
     
     scene.add(sphere);
     paths.push(sphere);
   }
   
-  console.log(`✅ تم إنشاء مسار مستقيم بـ ${points.length-1} أجزاء و ${points.length} نقاط`);
+  console.log(`✅ تم إنشاء مسار مستقيم بـ ${points.length-1} أجزاء`);
 }
 
 // =======================================
@@ -395,7 +395,7 @@ function setupExportCanvas() {
   console.log('✅ Canvas التصدير جاهز');
 }
 
-// تحويل نقطة ثلاثية الأبعاد إلى yaw/pitch لـ Marzipano
+// تحويل نقطة ثلاثية الأبعاد إلى yaw/pitch
 function pointToYawPitch(point) {
   const normalized = point.clone().normalize();
   
@@ -409,59 +409,65 @@ function pointToYawPitch(point) {
   return { yaw, pitch };
 }
 
-// دالة رسم المسار على الصورة (للتصدير فقط)
-function drawPathOnImage(ctx, points, color, width = 4) {
-  if (points.length < 2) return;
+// =======================================
+// دالة تجميع المسارات الذكية
+// =======================================
+function groupPaths() {
+  const pathGroups = [];
+  const processedIds = new Set();
   
-  ctx.save();
-  ctx.strokeStyle = color;
-  ctx.lineWidth = width;
-  ctx.lineCap = 'round';
-  ctx.lineJoin = 'round';
+  console.log(`🔍 بدء تجميع ${paths.length} قطعة مسار...`);
   
-  // تحويل النقاط إلى إحداثيات الصورة
-  for (let i = 0; i < points.length - 1; i++) {
-    const start = points[i];
-    const end = points[i + 1];
-    
-    // تحويل إلى yaw/pitch
-    const startYawPitch = pointToYawPitch(start);
-    const endYawPitch = pointToYawPitch(end);
-    
-    // تحويل إلى إحداثيات الصورة
-    const x1 = (startYawPitch.yaw / (2 * Math.PI)) * ctx.canvas.width;
-    const y1 = (0.5 - startYawPitch.pitch / Math.PI) * ctx.canvas.height;
-    const x2 = (endYawPitch.yaw / (2 * Math.PI)) * ctx.canvas.width;
-    const y2 = (0.5 - endYawPitch.pitch / Math.PI) * ctx.canvas.height;
-    
-    ctx.beginPath();
-    ctx.moveTo(x1, y1);
-    ctx.lineTo(x2, y2);
-    ctx.stroke();
-  }
+  // أولاً: تجميع كل القطع حسب pathId
+  const pathsByType = {};
   
-  // رسم النقاط
-  points.forEach((point, index) => {
-    const yawPitch = pointToYawPitch(point);
-    const x = (yawPitch.yaw / (2 * Math.PI)) * ctx.canvas.width;
-    const y = (0.5 - yawPitch.pitch / Math.PI) * ctx.canvas.height;
-    const radius = (index === 0 || index === points.length - 1) ? width * 2 : width * 1.5;
-    
-    ctx.beginPath();
-    ctx.fillStyle = color;
-    ctx.arc(x, y, radius, 0, Math.PI * 2);
-    ctx.fill();
-    
-    ctx.strokeStyle = '#ffffff';
-    ctx.lineWidth = 2;
-    ctx.stroke();
+  paths.forEach(path => {
+    if (path.userData && path.userData.type) {
+      const type = path.userData.type;
+      if (!pathsByType[type]) pathsByType[type] = [];
+      
+      if (path.userData.points) {
+        pathsByType[type].push({
+          points: path.userData.points,
+          pathId: path.userData.pathId || `unknown-${Math.random()}`
+        });
+      }
+    }
   });
   
-  ctx.restore();
+  // ثانياً: تجميع النقاط لكل نوع
+  Object.keys(pathsByType).forEach(type => {
+    const allPoints = [];
+    const processedPointIds = new Set();
+    
+    pathsByType[type].forEach(segment => {
+      if (segment.points) {
+        segment.points.forEach(point => {
+          const key = `${point.x.toFixed(3)},${point.y.toFixed(3)},${point.z.toFixed(3)}`;
+          if (!processedPointIds.has(key)) {
+            processedPointIds.add(key);
+            allPoints.push(point);
+          }
+        });
+      }
+    });
+    
+    // ترتيب النقاط (هذا يحتاج تحسين حسب احتياجك)
+    if (allPoints.length >= 2) {
+      pathGroups.push({
+        type: type,
+        points: allPoints
+      });
+    }
+  });
+  
+  console.log(`✅ تم تجميع ${pathGroups.length} مسار كامل`);
+  return pathGroups;
 }
-// دالة التصدير النهائية - مضبوطة بالكامل
 
-
+// =======================================
+// دالة التصدير النهائية
+// =======================================
 function exportForMarzipano() {
   if (isExporting) {
     console.log('⏳ جاري التصدير بالفعل...');
@@ -476,95 +482,62 @@ function exportForMarzipano() {
   isExporting = true;
   console.log('🎯 بدء تصدير حزمة Marzipano المتكاملة...');
 
-  // 1. الحصول على الصورة الأصلية
+  // 1. تجميع المسارات أولاً
+  const groupedPaths = groupPaths();
+  
+  // 2. الحصول على الصورة
   const texture = sphereMesh.material.map;
   const image = texture.image;
+  const imageWidth = image.width;
+  const imageHeight = image.height;
   
-  // 2. الحصول على الأبعاد الصحيحة من الصورة نفسها
-  const imageWidth = image.width;      // العرض الحقيقي للصورة
-  const imageHeight = image.height;    // الارتفاع الحقيقي للصورة
-  
-  console.log(`📸 أبعاد الصورة الأصلية: ${imageWidth} x ${imageHeight}`);
-  
-  // 3. التأكد من أن النسبة 2:1 (مطلوبة لـ Marzipano)
-  if (Math.abs(imageWidth / imageHeight - 2) > 0.01) {
-    console.warn('⚠️ تحذير: نسبة الصورة ليست 2:1 بالضبط');
-  }
+  console.log(`📸 أبعاد الصورة: ${imageWidth} x ${imageHeight}`);
+  console.log(`📊 عدد المسارات بعد التجميع: ${groupedPaths.length}`);
 
-  // 4. إعداد Canvas بنفس أبعاد الصورة الأصلية
+  // 3. إعداد Canvas بنفس أبعاد الصورة
   exportCanvas.width = imageWidth;
   exportCanvas.height = imageHeight;
   exportContext = exportCanvas.getContext('2d');
 
-  // 5. دالة تحويل yaw/pitch إلى إحداثيات الصورة بدقة
+  // 4. دالة تحويل yaw/pitch إلى إحداثيات الصورة
   function yawPitchToXY(yaw, pitch) {
-    // yaw من 0 إلى 2PI
-    // pitch من -PI/2 إلى PI/2
-    
     const x = (yaw / (2 * Math.PI)) * imageWidth;
     const y = (0.5 - pitch / Math.PI) * imageHeight;
-    
     return { x, y };
   }
 
-  // 6. رسم المسار على الصورة بدقة
-  function drawPathOnImage(ctx, points, color, type) {
+  // 5. رسم المسار على الصورة
+  function drawPathOnImage(ctx, points, color, width = 4) {
     if (points.length < 2) return;
     
     ctx.save();
     ctx.strokeStyle = color;
-    ctx.lineWidth = type === 'joint' ? 8 : 4;
+    ctx.lineWidth = width;
     ctx.lineCap = 'round';
     ctx.lineJoin = 'round';
     
-    // تحويل كل نقطة إلى إحداثيات الصورة
+    // تحويل النقاط إلى إحداثيات الصورة
     const imagePoints = points.map(p => {
       const { yaw, pitch } = pointToYawPitch(p);
       return yawPitchToXY(yaw, pitch);
     });
     
-    // رسم الخطوط
+    // رسم الخطوط المتصلة
     ctx.beginPath();
     ctx.moveTo(imagePoints[0].x, imagePoints[0].y);
     
     for (let i = 1; i < imagePoints.length; i++) {
-      // التعامل مع عبور الحافة
-      const prev = imagePoints[i-1];
       const curr = imagePoints[i];
-      
-      if (Math.abs(curr.x - prev.x) > imageWidth / 2) {
-        // الخط يعبر الحافة - نرسم جزئين
-        ctx.stroke();
-        ctx.beginPath();
-        
-        if (prev.x < imageWidth / 2) {
-          ctx.moveTo(prev.x, prev.y);
-          ctx.lineTo(imageWidth, prev.y);
-          ctx.stroke();
-          ctx.beginPath();
-          ctx.moveTo(0, curr.y);
-          ctx.lineTo(curr.x, curr.y);
-        } else {
-          ctx.moveTo(prev.x, prev.y);
-          ctx.lineTo(0, prev.y);
-          ctx.stroke();
-          ctx.beginPath();
-          ctx.moveTo(imageWidth, curr.y);
-          ctx.lineTo(curr.x, curr.y);
-        }
-      } else {
-        ctx.lineTo(curr.x, curr.y);
-      }
+      ctx.lineTo(curr.x, curr.y);
     }
     ctx.stroke();
     
-    // رسم النقاط
-    imagePoints.forEach((point, index) => {
-      const radius = (index === 0 || index === imagePoints.length - 1) ? 10 : 6;
-      
+    // رسم النقاط عند البداية والنهاية فقط
+    [0, imagePoints.length - 1].forEach(index => {
+      const point = imagePoints[index];
       ctx.beginPath();
       ctx.fillStyle = color;
-      ctx.arc(point.x, point.y, radius, 0, Math.PI * 2);
+      ctx.arc(point.x, point.y, 8, 0, Math.PI * 2);
       ctx.fill();
       
       ctx.strokeStyle = '#ffffff';
@@ -575,43 +548,36 @@ function exportForMarzipano() {
     ctx.restore();
   }
 
-  // 7. تجميع المسارات
-  const pathsData = [];
-  const processedPaths = new Set();
+  // 6. رسم الصورة الأصلية
+  exportContext.clearRect(0, 0, imageWidth, imageHeight);
+  exportContext.drawImage(image, 0, 0, imageWidth, imageHeight);
+
+  // 7. تحضير بيانات Marzipano
+  const marzipanoPaths = [];
   
-  paths.forEach(path => {
-    if (path.userData && path.userData.points && path.userData.points.length >= 2) {
-      const pathId = path.userData.pathId || `path-${Date.now()}-${Math.random()}`;
+  groupedPaths.forEach((group, index) => {
+    if (group.points.length >= 2) {
+      // تحويل النقاط إلى yaw/pitch
+      const points = group.points.map(p => {
+        const { yaw, pitch } = pointToYawPitch(p);
+        return { yaw, pitch };
+      });
       
-      if (!processedPaths.has(pathId)) {
-        processedPaths.add(pathId);
-        
-        const points = path.userData.points;
-        const yawPitchPoints = points.map(p => pointToYawPitch(p));
-        
-        pathsData.push({
-          id: pathId,
-          type: path.userData.type || 'EL',
-          color: '#' + (pathColors[path.userData.type] || 0xffcc00).toString(16).padStart(6, '0'),
-          points: yawPitchPoints
-        });
-      }
+      const color = '#' + pathColors[group.type].toString(16).padStart(6, '0');
+      
+      marzipanoPaths.push({
+        id: `path-${index + 1}`,
+        type: group.type,
+        color: color,
+        points: points
+      });
+      
+      // رسم المسار على الصورة
+      drawPathOnImage(exportContext, group.points, color, 4);
     }
   });
 
-  // 8. رسم كل شيء على الصورة
-  exportContext.clearRect(0, 0, imageWidth, imageHeight);
-  exportContext.drawImage(image, 0, 0, imageWidth, imageHeight);
-  
-  pathsData.forEach(path => {
-    drawPathOnImage(exportContext, 
-      path.points.map(p => new THREE.Vector3().setFromSphericalCoords(1, p.pitch, p.yaw)),
-      path.color,
-      'path'
-    );
-  });
-
-  // 9. إنشاء ملف JSON بالصيغة الصحيحة
+  // 8. إنشاء ملف JSON
   const marzipanoData = {
     version: "1.0",
     timestamp: Date.now(),
@@ -621,23 +587,15 @@ function exportForMarzipano() {
       width: imageWidth,
       height: imageHeight
     },
-    paths: pathsData.map(path => ({
-      id: path.id,
-      type: path.type,
-      color: path.color,
-      points: path.points.map(p => ({
-        yaw: p.yaw,
-        pitch: p.pitch
-      }))
-    })),
+    paths: marzipanoPaths,
     metadata: {
-      totalPaths: pathsData.length,
+      totalPaths: marzipanoPaths.length,
       scene: "BIM Virtual Tour",
       created: new Date().toISOString()
     }
   };
 
-  // 10. تصدير الملفات
+  // 9. تصدير الملفات
   try {
     // تصدير الصورة
     const imageDataURL = exportCanvas.toDataURL('image/jpeg', 0.95);
@@ -658,7 +616,7 @@ function exportForMarzipano() {
       jsonLink.click();
       
       console.log('✅ تم التصدير بنجاح');
-      alert(`✅ تم التصدير بنجاح!\n📸 الأبعاد: ${imageWidth} x ${imageHeight}\n📊 عدد المسارات: ${pathsData.length}`);
+      alert(`✅ تم التصدير بنجاح!\n📸 الأبعاد: ${imageWidth} x ${imageHeight}\n📊 عدد المسارات: ${marzipanoPaths.length}`);
     }, 500);
 
   } catch (error) {
@@ -668,6 +626,8 @@ function exportForMarzipano() {
 
   isExporting = false;
 }
+
+// ======================
 // أحداث لوحة المفاتيح
 // ======================
 function onKeyDown(e) {
@@ -765,7 +725,7 @@ function setupEvents() {
     };
   }
 
-  if (finalizeBtn) {
+ if (finalizeBtn) {
     finalizeBtn.style.display = 'block';
     finalizeBtn.style.position = 'absolute';
     finalizeBtn.style.bottom = '25px';
