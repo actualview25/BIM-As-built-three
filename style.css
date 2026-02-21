@@ -29,9 +29,6 @@ html, body {
   font-weight: bold;
 }
 
-/* =======================================
-   شريط الحالة - أعلى اليسار
-   ======================================= */
 .status-bar {
   position: fixed;
   top: 20px;
@@ -48,9 +45,6 @@ html, body {
   box-shadow: 0 5px 20px rgba(0,0,0,0.3);
 }
 
-/* =======================================
-   لوحة الألوان - تحت شريط الحالة
-   ======================================= */
 .color-panel {
   position: fixed;
   top: 80px;
@@ -86,9 +80,6 @@ html, body {
 .WA { background: #ff3300; }
 .GS { background: #33cc33; }
 
-/* =======================================
-   تلميحات المفاتيح - أسفل اليسار
-   ======================================= */
 .hint {
   position: fixed;
   bottom: 20px;
@@ -153,14 +144,13 @@ html, body {
   box-shadow: 0 5px 15px rgba(0,0,0,0.4);
 }
 
-/* ألوان الأزرار */
 #toggleRotate { background: #4a6c8f; }
 #toggleDraw { background: #8f6c4a; }
 #finalizeBtn { background: #228822; }
 #clearBtn { background: #882222; }
 
 /* =======================================
-   أزرار التصدير - أسفل اليمين (عمودي)
+   أزرار التصدير - أسفل اليمين
    ======================================= */
 .export-controls {
   position: fixed;
@@ -198,7 +188,6 @@ html, body {
   box-shadow: 0 5px 15px rgba(0,0,0,0.4);
 }
 
-/* ألوان أزرار التصدير */
 .export-controls button:first-child { background: linear-gradient(135deg, #8844aa, #aa66cc); }
 .export-controls button:nth-child(2) { background: linear-gradient(135deg, #448844, #66aa66); }
 .export-controls button:nth-child(3) { background: linear-gradient(135deg, #aa44aa, #cc66cc); }
@@ -268,9 +257,6 @@ html, body {
   }
 }
 
-/* =======================================
-   تأثيرات حركية
-   ======================================= */
 @keyframes slideIn {
   from { transform: translateX(100px); opacity: 0; }
   to { transform: translateX(0); opacity: 1; }
